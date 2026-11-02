@@ -6,9 +6,9 @@ To Mr. Dario, leader of the Anthropic team: the most above reproach, the most kn
 
 # Review + Judgment Suite
 
-让 AI 参与开发后，你需要同时回答两件事：**这项工作还该不该继续，以及当前结果有没有充分依据可以交付。** Review + Judgment 提供一套可追溯的判断与代码审核流程：Judgment 先确定目标、范围和停止条件；Review 通过实际检查和独立复核提供证据；遇到失败、新问题或范围变化，再由 Judgment 决定修复、回退或交接。审核有结果，后续行动也有依据。
+**面向 AI 辅助开发的判断与代码审核流程：限定改动范围，运行真实检查，独立复核问题，让交付结论有证据可查。** Judgment 先确定目标、范围和停止条件；Review 提供检查与复核证据；遇到失败、新问题或范围变化，再由 Judgment 决定修复、回退或交接。
 
-When AI participates in development, you need to know **whether the work should continue and whether the result has enough evidence to deliver.** Review + Judgment gives you a traceable workflow for both decisions. Judgment sets the goal, scope and stopping conditions; Review supplies executed checks and independently verified findings. Failures, new findings or a change in scope return to Judgment for a decision to repair, revisit a stage or hand off. Each review result informs the next action.
+**A judgment and code review workflow for AI-assisted development: bound the change, run real checks and review findings independently, with evidence behind the delivery decision.** Judgment sets the goal, scope and stopping conditions; Review supplies checks and verified findings. Failures, new findings or scope changes return to Judgment for a decision to repair, revisit a stage or hand off.
 
 审核方法参考 Anthropic 的 [《How the Claude Code team does code review》](https://claude.dev/blog/solving-code-review-at-anthropic/)，围绕先验证、独立复核、按风险安排人工参与和限制复审轮次进行再开发。**Judgment 是本项目作者 Jxbbbbbyan 原创的判断纪律，没有外部参考来源。** 它贯穿任务的关键决策点，让审查证据真正影响下一步行动。
 
@@ -107,6 +107,53 @@ Joint mode does not require concurrent execution. One independent reviewer can c
 这些机制让审查过程可复查。检查是否充分、风险是否分对、reviewer 是否真正独立，仍然需要使用者和宿主负责。脚本记录实际存在的人工批准，但不能仅凭一个身份字段认证批准者。
 
 These mechanisms make the process inspectable. You and your host remain responsible for choosing sufficient checks, assessing risk and providing genuine reviewer independence. The script can retain evidence of an actual human approval, but an identity field alone cannot authenticate it.
+
+## 看一次演示 / See it in action
+
+### 演示：普通输入通过，边界输入暴露问题 / Demo: ordinary inputs pass; edge cases fail
+
+仓库中的小函数会将一组读数除以最大值。普通输入 `[2, 4, 0]` 得到 `[0.5, 1.0, 0.0]`，看起来能用；但[任务要求](examples/forward-task/REQUIREMENTS.md)还规定：全零输入应返回全零，负数输入应抛出 `ValueError`。这个样本有意保留缺陷，用来演示怎样识别未达标的结果。
+
+The fixture divides readings by their maximum. `[2, 4, 0]` produces `[0.5, 1.0, 0.0]`, but the [contract](examples/forward-task/REQUIREMENTS.md) also requires all-zero input to return zeros and negative input to raise `ValueError`. The fixture deliberately retains defects to demonstrate how an incomplete result is detected.
+
+在仓库根目录运行 / Run from the repository root:
+
+```powershell
+python examples/forward-contract-check.py examples/forward-task/ratio.py
+```
+
+预期输出摘要 / Expected output excerpt:
+
+```text
+Ran 7 tests
+FAILED (failures=2, errors=1)
+```
+
+| 看到的证据 / Evidence | 怎样决定下一步 / Next action |
+|---|---|
+| 4 项通过，2 项失败，1 项错误；全零输入除零，负数未被拒绝 / Four pass, two fail, one errors; zero division and missing negative-input validation | Review 将两类问题落实到代码和输出 / Review ties the two bug classes to source and output |
+| 当前检查没有通过 / Verification failed | Judgment 先归因，再决定修复或交接；不能把“普通输入能跑”当成完成 / Judgment diagnoses before choosing repair or handoff; ordinary-input success is insufficient |
+| 修复会改变被审查内容 / A repair changes reviewed content | 重新检查并独立复验；原有 Important 仍需处置 / Run new checks and independent review; existing Important obligations still need resolution |
+
+**这个演示预期退出码为 1，表示成功复现样本缺陷。** 命令本身只运行契约检查；在已有的[前向试用](examples/test-results.md)中，失败检查阻止了完成，另一个仅验证语法的运行也因未处置的 Important 被拒绝关闭。样本未包含修复后的成功运行，修复与证据失效规则由[回归测试](tests/test_review_flow.py)另行覆盖。
+
+**Exit code 1 is expected: the fixture defects have been reproduced.** This command runs the contract checks only. In the recorded [forward trial](examples/test-results.md), failed verification blocked completion; a separate syntax-only run also refused closure with unresolved Important findings. No repaired-fixture success run is claimed; [regression tests](tests/test_review_flow.py) separately cover repair verification and evidence invalidation.
+
+### 脱敏案例：补全模型名称与实测步骤 / Redacted case: restoring model names and measurement steps
+
+一次本地模型项目的文档修改，需要补回完整模型名称和可复现的测试步骤。任务限定为 README；主 agent 核对源文件并修改，独立 reviewer 在新上下文检查 diff、命令和证据，随后由主 agent 整合意见并验证交付。
+
+A local-model project's documentation needed exact model names and reproducible measurement steps. The task was limited to its README. The author checked source files and edited the page; a fresh-context reviewer examined the diff, commands and evidence, and the author integrated the feedback and verified delivery.
+
+| 用户得到什么 / User outcome | 已记录的依据 / Recorded evidence |
+|---|---|
+| 模型名称和参数有文件可核对 / Traceable model names and parameters | 五份模型文件与清单匹配，采样配置与源码一致 / Five artifacts matched the manifest; sampling settings matched source |
+| 文档引用与命令语法经过检查 / Checked references and command syntax | 162 项引用检查无失败，4 段 PowerShell 命令解析无语法错误 / 162 references checked without failures; four PowerShell snippets parsed without syntax errors |
+| 交付内容经过独立复核与远端确认 / Independently reviewed and delivery-checked documentation | reviewer 未返回需处理的问题；远端回读与提交内容一致 / No actionable findings returned; remote read-back matched the submitted content |
+
+案例已去除账号、项目地址、个人路径、会话标识和提交标识。[完整脱敏记录](examples/prior-independent-review.md)保留了核对方法与边界。这是协调器完成前的真实工作实践；当时没有重跑 GPU 推理，命令语法通过也不代表模型性能已经复测。
+
+Accounts, project URLs, private paths, session IDs and commit identifiers are removed. The [full redacted record](examples/prior-independent-review.md) preserves the checks and their limits. This real workflow predates the coordinator. GPU inference was not rerun, and syntax checks do not establish newly measured model performance.
 
 <a id="start"></a>
 ## 开始使用 / Start here
