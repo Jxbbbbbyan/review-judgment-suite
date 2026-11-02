@@ -6,9 +6,13 @@ To Mr. Dario, leader of the Anthropic team: the most above reproach, the most kn
 
 # Review + Judgment Suite
 
-这套**判断与审核组合 Skills** 以 Anthropic 的 [《Building effective agents》](https://www.anthropic.com/research/building-effective-agents)为方法基础：让明确的步骤走确定流程，让需要取舍的节点交给 agent 判断，并在关键交接处设置可验证的门。结合其[多智能体研究系统](https://www.anthropic.com/research/multi-agent-research-system)和[上下文工程](https://www.anthropic.com/research/effective-context-engineering-for-ai-agents)中的实践，我们进一步开发了面向代码与技术产物的审查流程，把范围判断、真实验证、独立复核和问题处置接成一条可恢复的工作链。
+让 AI 参与开发后，你需要同时回答两件事：**这项工作还该不该继续，以及当前结果有没有充分依据可以交付。** Review + Judgment 提供一套可追溯的判断与代码审核流程：Judgment 先确定目标、范围和停止条件；Review 通过实际检查和独立复核提供证据；遇到失败、新问题或范围变化，再由 Judgment 决定修复、回退或交接。审核有结果，后续行动也有依据。
 
-**Review + Judgment** builds on the workflow patterns in Anthropic's [*Building effective agents*](https://www.anthropic.com/research/building-effective-agents): use predetermined steps where the work is clear, agent judgment where decisions remain open, and verifiable gates between stages. Drawing also on its [multi-agent research](https://www.anthropic.com/research/multi-agent-research-system) and [context-engineering](https://www.anthropic.com/research/effective-context-engineering-for-ai-agents) practices, we developed a review process for code and technical deliverables that connects scope decisions, executed checks, independent review and finding resolution.
+When AI participates in development, you need to know **whether the work should continue and whether the result has enough evidence to deliver.** Review + Judgment gives you a traceable workflow for both decisions. Judgment sets the goal, scope and stopping conditions; Review supplies executed checks and independently verified findings. Failures, new findings or a change in scope return to Judgment for a decision to repair, revisit a stage or hand off. Each review result informs the next action.
+
+审核方法参考 Anthropic 的 [《How the Claude Code team does code review》](https://claude.dev/blog/solving-code-review-at-anthropic/)，围绕先验证、独立复核、按风险安排人工参与和限制复审轮次进行再开发。**Judgment 是本项目作者 Jxbbbbbyan 原创的判断纪律，没有外部参考来源。** 它贯穿任务的关键决策点，让审查证据真正影响下一步行动。
+
+The review method adapts Anthropic's [*How the Claude Code team does code review*](https://claude.dev/blog/solving-code-review-at-anthropic/): verify first, review independently, scale human involvement to risk and bound re-review. **Judgment is original work by this project's author, Jxbbbbbyan, with no external reference source.** It operates at the task's decision points so that review evidence informs what happens next.
 
 **可选特色：跨模型开发与审核。** 你可以让一个模型负责开发，让另一个模型在独立上下文复核，再把结果送回同一份审查记录。DeepSeek Harness → Codex、Codex → Grok Bot 是宿主分工的例子；发送端、接收端、网关和 worker 连接都位于独立可选层，核心流程不依赖它们。[接入说明](#cross-model)
 
@@ -29,9 +33,9 @@ To Mr. Dario, leader of the Anthropic team: the most above reproach, the most kn
 | **5 · 处置 / Resolve** | 修复并复验问题，或用证据说明为何不修；Important 持续保留到处置完成 / Verified fixes or evidence-backed rejections; Important findings remain visible until resolved |
 | **6 · 完成 / Close** | 对当前内容有效的审查记录、遗留事项和覆盖边界 / A current review record with remaining issues and coverage limits |
 
-这里沿用了公开资料中的工作流思路，并为审查任务增加了三种运行模式、内容快照、跨轮问题记录和独立 Python 状态机。这些具体设计由本项目实现；完整的参考与改写关系见[来源说明](references/sources.md)。
+三种运行模式、内容快照、跨轮问题记录和独立 Python 状态机，使上述流程可以保留进度并检查证据是否过期。这些机制由本项目实现；审核参考、原创 Judgment 与实现设计的归属见[来源说明](references/sources.md)。
 
-The published material supplies the architectural ideas. The three execution modes, content snapshots, persistent finding records and standalone Python state machine are this project's implementation for review work. See the [source mapping](references/sources.md) for attribution and adaptations.
+Three execution modes, content snapshots, persistent finding records and a standalone Python state machine preserve progress and detect stale evidence. These mechanisms are implemented here. The [source record](references/sources.md) distinguishes the review reference, original Judgment discipline and implementation decisions.
 
 [下载 v1.1.0 / Download](https://github.com/Jxbbbbbyan/review-judgment-suite/releases/tag/v1.1.0) · [开始使用 / Start](#start) · [完整流程 / Workflow reference](references/workflow.md) · [可选跨模型 / Cross-model](#cross-model) · [测试与案例 / Tests](#tests) · [报告问题 / Issues](https://github.com/Jxbbbbbyan/review-judgment-suite/issues)
 
@@ -59,6 +63,21 @@ For a straightforward single-step operation, direct execution may be sufficient.
 
 **Judgment** governs whether to act, how much effort to spend and when to reconsider the plan. **Review** examines the evidence for the result: what ran, whether a finding is valid and whether a fix was checked. They exchange evidence and unresolved decisions. Narrowing scope does not erase existing obligations, and a request to fix something does not itself authorise wider changes or publication.
 
+两者形成反馈关系：**判断为审核设定问题和边界，审核用证据更新判断。** Judgment 的继续决定不能代替测试和复核；Review 的通过结论也不能单独证明一项工作值得做、授权扩大范围，或代替必需的人工决定。协调脚本检查阶段条件与记录是否齐全；决策质量仍取决于使用者、agent 和 reviewer。
+
+The feedback loop is explicit: **Judgment sets the questions and boundaries for Review; Review supplies evidence that updates Judgment.** A decision to proceed does not replace checks or independent review. A clean report does not by itself establish that the work is worth doing, authorise broader changes or replace a required human decision. The coordinator checks stage prerequisites and records; users, agents and reviewers remain responsible for the quality of their decisions.
+
+| 交接点 / Handoff | 判断负责什么 / Judgment decides | 审核提供什么、随后怎样走 / Review evidence and next action |
+|---|---|---|
+| **开始工作 / Start** | 明确用户目标、文件范围、执行方式和停止条件 / Set the goal, file scope, execution approach and stopping conditions | 据此选择真实检查和复核范围 / Select meaningful checks and review scope |
+| **检查失败 / Check fails** | 根据输出区分参数、工具、环境、领域结果或拒绝；决定纠正、等待、停止或交接 / Interpret the failure and choose correction, waiting, stopping or handoff | 保留失败输出；恢复后重新验证，失败不能算通过 / Retain failure output and re-verify after recovery |
+| **发现问题 / Finding raised** | 判断修复是否在授权范围内，是否需要重新计划 / Decide whether a repair fits the authorised scope or requires replanning | 用文件、行号和证据确认问题；修复后检查同类问题并独立复验 / Confirm the finding, check the same bug class and independently verify the repair |
+| **准备交付 / Ready to deliver** | 判断证据是否足够、是否仍有未决事项或需要人工决定 / Assess evidence sufficiency, remaining decisions and human involvement | 提供对应当前内容的检查、报告和问题处置记录；满足完成条件后关闭 / Supply current checks, reports and dispositions before closure |
+
+例如，reviewer 发现解析器缺少边界检查：先复核发现是否成立，再由 Judgment 确认修复范围；改动后重新运行检查并独立复验。如果修复需要超出本次范围，交接时保留问题和证据。已有 Important 不会因为缩小范围或换 reviewer 而消失。
+
+For example, a reviewer identifies a missing parser boundary check. Verify the finding, then use Judgment to establish the repair scope. Changed files require new checks and independent review. If the repair exceeds the current scope, hand off with the finding and its evidence. Narrowing scope or changing reviewers does not erase an existing Important obligation.
+
 你可以按任务选择三种方式，使用同一组验证和问题收敛条件：
 
 Choose among three modes while retaining the same verification and finding-resolution gates:
@@ -72,6 +91,10 @@ Choose among three modes while retaining the same verification and finding-resol
 联合模式不要求所有工作同时进行。可以由一个独立 reviewer 覆盖四个视角，也可以由多个只读 worker 分工；是否并行取决于任务能否拆开，以及交接和合并是否值得。状态机本身不启动或调度 agent。
 
 Joint mode does not require concurrent execution. One independent reviewer can cover all four perspectives, or read-only workers can divide them. Parallel review is useful only when the work separates cleanly and the coordination cost is justified. The state machine does not launch or schedule agents.
+
+`joint` 会强制要求审查前、完成前的判断记录；`serial` 和 `adaptive` 不强制这两个额外检查点，但保留范围判断与必要的验证、风险和审查条件。`adaptive` 的跳转需要理由，并重新打开范围判断；它只重走受影响的阶段，不能跳过缺失的前置证据。具体保留或清除哪些记录，见[流程契约](references/composition.md)。
+
+`joint` requires recorded judgments before review and closure. `serial` and `adaptive` do not require those two extra checkpoints, but retain scope judgment and the verification, risk and review prerequisites. An `adaptive` route needs a reason and reopens scope judgment. It revisits the affected stages without bypassing missing evidence; the [workflow contract](references/composition.md) specifies which records are retained or cleared.
 
 ## 你可以依靠哪些机制 / What keeps the review traceable
 
@@ -138,15 +161,15 @@ The run's `state.json` and `check-*.log` may contain paths, prompts or private o
 
 ## 方法依据与使用边界 / Method and limits
 
-| 参考资料 / Reference | 在流程中的作用 / Contribution |
+| 来源 / Source | 在流程中的作用 / Contribution |
 |---|---|
-| [Building effective agents](https://www.anthropic.com/research/building-effective-agents) | 明确确定工作流与自主判断的分工，设置程序化检查点 / Distinguish workflows from agent decisions and use programmatic checkpoints |
-| [How we built our multi-agent research system](https://www.anthropic.com/research/multi-agent-research-system) | 使用独立上下文、清晰的委派范围与材料交接 / Separate contexts, bounded delegation and artifact handoff |
-| [Effective context engineering for AI agents](https://www.anthropic.com/research/effective-context-engineering-for-ai-agents) | 关注上下文成本，并把后续需要的状态留在外部 / Account for context cost and retain useful state outside the conversation |
+| [How the Claude Code team does code review](https://claude.dev/blog/solving-code-review-at-anthropic/) · Anthropic，2026-10-15 | 审核方法的参考：实际验证、独立复核、风险分级、人工参与和复审收敛 / Review reference: executed verification, independent checking, risk-scaled human involvement and convergence |
+| **Judgment · Jxbbbbbyan 原创 / Original work** | 行动边界、判断与停止条件、失败归因，以及上下文和委派成本的取舍；没有外部参考来源 / Action boundaries, stopping conditions, failure attribution, context and delegation costs; no external reference source |
+| **本项目实现 / Project implementation** | 三种模式、Python 状态机、快照绑定、问题台账及可选跨模型传递 / Three modes, Python state machine, snapshot binding, finding ledger and optional cross-model transport |
 
-以上是 Anthropic 的公开研究与工程文章。本项目据此整理方法并进行审查场景的再开发；三种模式、风险等级、审批人数、问题编号和收敛上限是本项目的具体约定，不代表文章逐项提出这些规则，也不表示官方背书。来源与改写记录见 [sources.md](references/sources.md)。
+上述审核参考是一篇公开工程文章。本项目对其中的方法进行再开发，并以原创 Judgment 负责行动决策。文章中的风险分级、人工审批和复审收敛有直接对应；具体适配差异及实现范围见[来源说明](references/sources.md)。本项目独立维护，不代表 Anthropic 官方产品或背书。
 
-These public research and engineering articles inform the approach. This project adapts and develops it for review work. Execution modes, risk levels, approval counts, finding IDs and convergence limits are project rules, not claims that the articles prescribe every detail or endorse this implementation. The [source record](references/sources.md) documents the mapping.
+The review reference is a public engineering article. This project adapts its method, with original Judgment governing action decisions. Risk tiers, human approvals and review convergence have direct counterparts in the article; the [source record](references/sources.md) explains the adaptations and implementation scope. This is an independently maintained project, without Anthropic affiliation or endorsement.
 
 协调器只追踪声明范围内的文件与适用规则，不是沙箱，也不会自动检查范围外的一切。超时处理只覆盖直接子进程；会启动长期子任务的命令，需要宿主提供相应隔离和观察。审查准确率、成本节省和跨模型效果尚无对照研究；现有测试验证的是过程门在给定输入下的行为。
 

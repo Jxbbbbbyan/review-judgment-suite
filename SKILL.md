@@ -1,11 +1,13 @@
 ---
 name: review-judgment-suite
-description: Combine judgment and layered review with snapshot-bound evidence, bounded re-entry and optional cross-model handoff. Use for requested combined reviews or resumable reviewer handoffs; not routine single-step edits.
+description: Review code and technical deliverables with scope judgment, executed checks, independent findings and bounded re-entry. Use for evidence-led reviews or resumable reviewer handoffs, with optional cross-model routing; not routine single-step edits.
 ---
 
 # Review + Judgment / 判断与分层审查
 
 Use Judgment to decide whether to act, how far, when to replan and when to stop. Use layered review to establish what was checked, what risks remain and which findings are resolved. The shared coordinator is [scripts/review_flow.py](scripts/review_flow.py), Python 3.10+ standard library only.
+
+Judgment sets Review's scope and decision criteria; Review returns evidence for the next judgment. Neither a proceed decision nor a clean report replaces the other's responsibilities. Judgment is Jxbbbbbyan's original work, with no external reference source. The review method adapts [How the Claude Code team does code review](https://claude.dev/blog/solving-code-review-at-anthropic/); see [attribution and adaptations](references/sources.md).
 
 先判断边界，再验证改动；遇到新证据可回到判断节点，但不能跳过验证、独立审查和问题处置。默认选 `adaptive`；固定流程选 `serial`；关键门前都要重判时选 `joint`。完整命令和数据格式见 [workflow](references/workflow.md)。
 
@@ -24,9 +26,9 @@ Use Judgment to decide whether to act, how far, when to replan and when to stop.
 
 - [Composition rules and gates](references/composition.md): loading, mode selection, failures, owner resolution, evidence limits.
 - [CLI, state and JSON contracts](references/workflow.md): actual execution and stage jumps.
-- [Sources and adaptation record](references/sources.md): official readings versus local conventions; snapshot provenance.
+- [Sources and adaptation record](references/sources.md): review article, original Judgment authorship, implementation adaptations and snapshot provenance.
 - [Optional cross-model review](references/cross-model-review.md): load only for separate developer/reviewer models or DSH/Codex/Grok Bot routing. Use explicitly selected material; do not forward private sessions or run a paid review merely to test transport.
-- [Original local skills](sources/): inspection-only snapshots. They are not runtime dependencies; use this combined contract where adaptation differs.
+- [Source snapshots](sources/): inspection-only provenance records. They are not runtime dependencies; follow this workflow contract where adaptation differs.
 
 ## Output
 

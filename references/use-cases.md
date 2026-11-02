@@ -2,7 +2,9 @@
 
 [README](../README.md) · [CLI](workflow.md) · [Tests](../examples/test-results.md)
 
-The suite combines **judgment** and the locally named **anthropic-review** skill. It is an independent project informed by linked public engineering articles, without Anthropic affiliation or endorsement. Keywords describe the implemented workflow, not an official product integration.
+Use **Judgment** to set the boundaries and decide the next action; use **Review** to establish the evidence for that decision. Judgment is Jxbbbbbyan's original work, with no external reference source. The review method adapts [How the Claude Code team does code review](https://claude.dev/blog/solving-code-review-at-anthropic/). See the [source record](sources.md) for attribution and implementation differences.
+
+先由 Judgment 确定行动边界，再由 Review 提供检查与复核证据；新证据出现后重新判断下一步。Judgment 为作者原创，审核方法参考上述工程文章。下列关键词对应已有能力和使用场景。
 
 ## Match a request / 从需求定位
 
