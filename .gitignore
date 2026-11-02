@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+.venv/
+.grok-review/
+.review-runs/
+review-run*/
+state.json
+.lock
+check-*.log
+approval.json
+*.zip
+*.log

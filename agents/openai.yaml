@@ -1,0 +1,4 @@
+interface:
+  display_name: "Review + Judgment"
+  short_description: "Evidence-led review with bounded judgment and resumable gates"
+  default_prompt: "Use $review-judgment-suite to review this change, record actual checks, and resolve findings within scope."
