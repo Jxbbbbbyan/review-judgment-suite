@@ -1,85 +1,92 @@
-特别致敬：
-
-最清白、最懂安全、最尊重版权、最不会蒸馏、最严于律己宽于待人、最不喜欢把模型降智给用户限流、最便宜、最尊重世界和平，最不搞区别对待，最喜欢公平竞争的Anthropic团队的领袖Dario先生
-
-Special tribute:
-
+<sub><em>特别致敬：<br>
+最清白、最懂安全、最尊重版权、最不会蒸馏、最严于律己宽于待人、最不喜欢把模型降智给用户限流、最便宜、最尊重世界和平，最不搞区别对待，最喜欢公平竞争的Anthropic团队的领袖Dario先生<br><br>
+Special tribute:<br>
 To Mr. Dario, leader of the Anthropic team: the most above reproach, the most knowledgeable about safety, the most respectful of copyright, the least inclined to distil models, the strictest with himself and most generous toward others, the least fond of making models less capable or rate-limiting users, the least expensive, the most respectful of world peace, the least inclined to treat people differently, and the greatest champion of fair competition.
+</em></sub>
 
-*以上为作者指定的讽刺性题词；英文为对应译文。下文技术说明与来源引用独立于这段题词。 / The passage above is the author's requested satirical dedication, followed by its translation. The technical claims and source attributions below stand separately.*
+# Review + Judgment Suite
 
-# Review + Judgment Suite — evidence-led code review and agent workflow gates
+这套**判断与审核组合 Skills** 以 Anthropic 的 [《Building effective agents》](https://www.anthropic.com/research/building-effective-agents)为方法基础：让明确的步骤走确定流程，让需要取舍的节点交给 agent 判断，并在关键交接处设置可验证的门。结合其[多智能体研究系统](https://www.anthropic.com/research/multi-agent-research-system)和[上下文工程](https://www.anthropic.com/research/effective-context-engineering-for-ai-agents)中的实践，我们进一步开发了面向代码与技术产物的审查流程，把范围判断、真实验证、独立复核和问题处置接成一条可恢复的工作链。
 
-**先判断该不该做，再证明改动做对了。遇到新证据可以回退，不能把跳步当成通过。**
+**Review + Judgment** builds on the workflow patterns in Anthropic's [*Building effective agents*](https://www.anthropic.com/research/building-effective-agents): use predetermined steps where the work is clear, agent judgment where decisions remain open, and verifiable gates between stages. Drawing also on its [multi-agent research](https://www.anthropic.com/research/multi-agent-research-system) and [context-engineering](https://www.anthropic.com/research/effective-context-engineering-for-ai-agents) practices, we developed a review process for code and technical deliverables that connects scope decisions, executed checks, independent review and finding resolution.
 
-**Decide whether to act, then establish what the change actually passed. Revisit decisions when evidence changes; keep the verification gates intact.**
+## 先看流程 / The workflow
 
-这是将本地 `judgment` 与 `anthropic-review` 整理成一套可安装技能的独立组合包。前者处理范围、成本、失败和停止条件，后者处理验证、风险、独立复核和问题收敛。Python 脚本负责状态转换、真实命令输出和证据失效；agent 负责解释证据和工程取舍。
+**判断范围 → 实际验证 → 评定风险 → 独立审查 → 处理问题 → 确认完成。** 出现新证据时可以返回前面的节点；内容一旦变化，旧的验证和审查就需要重新建立。
 
-This package combines two local skills into a self-contained review workflow. Judgment governs scope, effort, failure handling and stopping. Layered review governs verification, risk, independent examination and finding resolution. A local Python coordinator maintains the evidence state; agents supply the engineering judgment.
+**Judge scope → run checks → assess risk → review independently → resolve findings → confirm completion.** New evidence can send the work back to an earlier stage. Changed content invalidates the checks and reviews that depended on it.
 
-[使用契约 / Skill](SKILL.md) · [命令与格式 / CLI](references/workflow.md) · [组合方式 / Composition](references/composition.md) · [来源 / Sources](references/sources.md) · [测试 / Tests](#tests)
+| 步骤 / Step | 你会得到什么 / What you get |
+|---|---|
+| **1 · 判断 / Judge** | 确定本次要做什么、做到哪里，以及何时应停止或交接 / A defined scope, execution approach and stopping or handoff conditions |
+| **2 · 验证 / Verify** | 实际执行的命令、输出和退出码，作为后续判断依据 / Executed commands, output and exit codes to inspect |
+| **3 · 风险 / Assess risk** | 按改动影响安排审查深度，明确需要的人工决定 / Review depth and human decisions matched to the impact |
+| **4 · 审查 / Review** | 独立上下文从正确性、安全、端到端行为和项目约定四个视角复核 / A separate context reviewing correctness, security, end-to-end behaviour and conventions |
+| **5 · 处置 / Resolve** | 修复并复验问题，或用证据说明为何不修；Important 持续保留到处置完成 / Verified fixes or evidence-backed rejections; Important findings remain visible until resolved |
+| **6 · 完成 / Close** | 对当前内容有效的审查记录、遗留事项和覆盖边界 / A current review record with remaining issues and coverage limits |
 
-[下载 v1.0.0 / Download](https://github.com/Jxbbbbbyan/review-judgment-suite/releases/tag/v1.0.0) · [用途与技术路线 / Use-case map](references/use-cases.md) · [报告问题 / Issues](https://github.com/Jxbbbbbyan/review-judgment-suite/issues)
+这里沿用了公开资料中的工作流思路，并为审查任务增加了三种运行模式、内容快照、跨轮问题记录和独立 Python 状态机。这些具体设计由本项目实现；完整的参考与改写关系见[来源说明](references/sources.md)。
 
-## 技术路线与适用需求 / Technical route and fit
+The published material supplies the architectural ideas. The three execution modes, content snapshots, persistent finding records and standalone Python state machine are this project's implementation for review work. See the [source mapping](references/sources.md) for attribution and adaptations.
 
-**Judgment scope/failure decisions → executed verification → risk assessment → independent code review → finding adjudication → guarded closure.** Python CLI + explicit state machine + SHA-256 content snapshots + persistent issue ledger. 三种模式共用同一组证据门，独立 reviewer 由现有 agent 宿主提供。
+[下载 v1.0.0 / Download](https://github.com/Jxbbbbbyan/review-judgment-suite/releases/tag/v1.0.0) · [开始使用 / Start](#start) · [完整流程 / Workflow reference](references/workflow.md) · [测试与案例 / Tests](#tests) · [报告问题 / Issues](https://github.com/Jxbbbbbyan/review-judgment-suite/issues)
 
-| 你可能在找 / Request | 对应能力 / Capability | 核对入口 / Evidence |
+## 适合怎样的工作 / Where it helps
+
+如果你已经让 Codex、DeepSeek Harness 或其他 agent 宿主参与开发，这套 Skills 可以用于代码改动、技术文档和多步骤交付的复核。它尤其适合那些需要追问“这次通过到底对应哪份内容、哪些检查、哪位 reviewer”的任务。宿主需要能读取技能、运行本地命令，并为独立审查提供新的上下文。
+
+Use it when an agent host such as Codex or DeepSeek Harness already participates in your development work, and you need to trace a review conclusion back to the exact content, checks and reviewer context. It supports code changes, technical documentation and multi-step deliverables. Your host must be able to read skills, run local commands and provide a separate context for independent review.
+
+| 你遇到的情况 / Situation | 流程怎样帮助你 / How the workflow helps |
+|---|---|
+| AI 越查越多，逐渐偏离本次目标 / Review keeps expanding beyond the request | 先固定范围，在关键节点重判必要性 / Define scope first and reconsider necessity at checkpoints |
+| 代码改过了，仍沿用之前的“通过” / An old pass survives a new edit | 内容或适用规则变化后，相关验证与审查失效 / Invalidate dependent checks and reviews when content or rules change |
+| 换了 reviewer，之前的问题没了 / Findings vanish during reviewer handoff | 用持久记录保留 Important，不能靠空报告清除 / Keep Important findings across passes, including empty reports |
+| 工具失败后不断重试，却说不清原因 / Repeated retries without a diagnosis | 先记录失败归因，再决定改参数、换方法或交接 / Classify the failure before correcting inputs, changing tools or handing off |
+| 结果写得很肯定，却没有可核对的输出 / Confident conclusions without inspectable evidence | 保留真实命令、输出、退出码、耗时和哈希 / Retain actual commands, output, exit codes, elapsed time and hashes |
+
+确定的一步操作通常直接完成即可；需要范围取舍、失败处理或跨轮复核时，再用完整流程。更多需求与实现对应关系见[用途地图](references/use-cases.md)。
+
+For a straightforward single-step operation, direct execution may be sufficient. Use the full workflow when scope decisions, failure handling or review across multiple passes change how you should act. The [use-case map](references/use-cases.md) links those needs to implementation evidence.
+
+## 判断与审核怎样配合 / How judgment and review work together
+
+**判断**负责行动边界：该不该做、需要投入多少、什么时候应重新计划。**审核**负责结果依据：检查是否实际执行、发现是否成立、修复是否经过复验。两者交换的是证据和待决事项：判断缩小范围时，不能顺带抹去已有义务；审核要求修复时，也不会自动获得扩大范围或发布的权限。
+
+**Judgment** governs whether to act, how much effort to spend and when to reconsider the plan. **Review** examines the evidence for the result: what ran, whether a finding is valid and whether a fix was checked. They exchange evidence and unresolved decisions. Narrowing scope does not erase existing obligations, and a request to fix something does not itself authorise wider changes or publication.
+
+你可以按任务选择三种方式，使用同一组验证和问题收敛条件：
+
+Choose among three modes while retaining the same verification and finding-resolution gates:
+
+| Mode | 工作方式 / How it runs | 适用情况 / When to choose it |
 |---|---|---|
-| 让 AI 审代码，但不能随意扩大范围 / Bounded AI code review | Declared file scope, judgment checkpoints, failure attribution | [Skill contract](SKILL.md) |
-| 多个 reviewer 交接后问题丢了 / Findings disappear across reviewer handoffs | Persistent Important obligations and run-wide finding IDs | [Coordinator](scripts/review_flow.py) |
-| 代码改完，旧测试和审查还显示通过 / Stale review evidence after edits | Content and owner-document snapshots invalidate dependent gates | [Regression tests](tests/test_review_flow.py) |
-| 串行审查、联合判断或中途回退 / Sequential and adaptive review workflows | serial / joint / adaptive state transitions with prerequisite checks | [Modes and gates](references/composition.md) |
-| 想保留真实检查输出和人工决定 / Evidence and human-in-the-loop records | Command logs, exit codes, hashes and approval attestations | [CLI contracts](references/workflow.md) |
+| **`serial` · 串行** | 按判断、验证、风险、独立审查、处置、完成依次推进 / Move through the stages in order | 范围稳定，检查步骤已知 / Stable scope and known checks |
+| **`joint` · 联合** | 审查前和完成前都加入判断检查点，复核工作是否仍必要、证据是否充分 / Reconsider necessity and evidence before review and closure | 关键交接处需要再次取舍 / Decisions need revisiting at critical handoffs |
+| **`adaptive` · 可回退** | 带理由返回指定节点，清除受影响的通过状态，再继续 / Return to a named stage with a reason and invalidate affected gates | 新证据、失败或修复需要局部重走 / New evidence, failures or repairs require re-entry |
 
-This is an **agent skill and local workflow coordinator**, suitable for a host that already provides independent reviewer contexts. It does not include an LLM backend or schedule workers. The tests establish state transitions on stated inputs, not a measured improvement in code-review accuracy.
+联合模式不要求所有工作同时进行。可以由一个独立 reviewer 覆盖四个视角，也可以由多个只读 worker 分工；是否并行取决于任务能否拆开，以及交接和合并是否值得。状态机本身不启动或调度 agent。
 
-## 为什么组合 / Why combine them
+Joint mode does not require concurrent execution. One independent reviewer can cover all four perspectives, or read-only workers can divide them. Parallel review is useful only when the work separates cleanly and the coordination cost is justified. The state machine does not launch or schedule agents.
 
-单独做代码审查，容易把“不该扩大范围”变成“再多查一点”；单独强调判断，又容易在应该验证时过早结束。组合包把两者的交接写成可检查的门：判断可以缩小工作范围，却不能删除必须完成的验证；审查可以提出修复，却不能自动取得改动范围和发布权限。
+## 你可以依靠哪些机制 / What keeps the review traceable
 
-Review alone can keep finding work beyond the request. Judgment alone can stop before the result has been checked. Here, boundary decisions cannot silently erase verification obligations, and a review finding cannot automatically authorise wider changes or publication.
+- **内容快照。** 验证和审查绑定到声明范围内的文件及适用规则；内容变化后，相关结论过期。**Content snapshots:** checks and reviews are tied to declared files and applicable rules, and become stale when those inputs change.
+- **问题跨轮保留。** Important 不能通过换 reviewer、复用编号或重新提交空报告消失。**Persistent findings:** a new reviewer, reused ID or empty report cannot erase an Important obligation.
+- **实际执行记录。** 本地脚本执行你指定的检查命令，保存输出、退出码、耗时和哈希。**Executed checks:** the coordinator runs the commands you supply and records their output, exit codes, timing and hashes.
+- **有限回退。** 新证据可以改变路线，但回退需要理由，也受轮次和路由预算约束。**Bounded re-entry:** new evidence can change the route, with a recorded reason and explicit limits.
+- **独立运行。** Python 3.10+ 标准库即可运行协调器；模型和独立上下文由现有宿主提供。**Local operation:** the coordinator needs only Python 3.10+ and its standard library; your host supplies models and reviewer contexts.
 
-| 特色 / Feature | 实际作用 / Practical value | 实现位置 / Implementation |
-|---|---|---|
-| 两种技能各司其职 / Clear ownership | 把“该不该做”和“做得对不对”分开讨论 / Separate action choices from correctness evidence | [组合契约](references/composition.md) |
-| 三种编排方式 / Three modes | 稳定任务串行，关键门联合重判，新证据出现时局部回退 / Serial execution, joint checkpoints or adaptive re-entry | [独立脚本](scripts/review_flow.py) |
-| 内容与证据绑定 / Snapshot-bound evidence | 文件或适用规则变化后，旧验证和审查不再有效 / Content or owner changes invalidate old gates | SHA-256 snapshots and persisted events |
-| Important 跨轮保留 / Persistent obligations | 换 reviewer 或提交空报告，不能让问题消失 / A new reviewer or empty report cannot erase an issue | Persistent issue ledger |
-| 检查命令实际执行 / Executed verification | 留下命令、退出码、耗时、输出及哈希 / Retain argv, exit code, elapsed time, log and hash | Direct subprocess execution |
-| 无云服务依赖 / Local operation | Python 标准库即可使用；agent 可由现有宿主提供 / Standard-library Python; use your existing agent host | Python 3.10+; no API key required |
+这些机制让审查过程可复查。检查是否充分、风险是否分对、reviewer 是否真正独立，仍然需要使用者和宿主负责。脚本记录实际存在的人工批准，但不能仅凭一个身份字段认证批准者。
 
-这些是实现性质，不是审查效果的统计保证。脚本能拒绝缺失的证据，不能证明检查充分、风险判断准确，或 reviewer 真正拥有独立上下文。
+These mechanisms make the process inspectable. You and your host remain responsible for choosing sufficient checks, assessing risk and providing genuine reviewer independence. The script can retain evidence of an actual human approval, but an identity field alone cannot authenticate it.
 
-These are implementation properties, not measured gains in defect detection. The runner checks evidence structure and freshness; it cannot prove that a test is adequate, a risk label is correct, or a reviewer was genuinely isolated.
+<a id="start"></a>
+## 开始使用 / Start here
 
-## 先理解两个来源 / Understand the two inputs
+先获取仓库并运行自检。请使用真实的 Python 3.10+ 解释器；若系统中的 `python` 是占位入口，换成已安装解释器的命令或路径。
 
-**Judgment**：先区分确定流程与开放决策；给范围和投入设边界；失败先归因；评估委派成本；把不可继续的原因、证据和选项交出去。原版还引用了规划、上下文及计算资源等 owner 文档。组合版只在实际触发相应分支时要求这些文件可读，未触发的依赖不会阻断普通审查。
-
-**Layered review**：收集意图、diff 和约定；先运行验证；评定风险；从正确性、安全、端到端行为和约定四个角度独立审查；复核候选问题；处理 Important，再报告结果与边界。Low/Medium/High、审批人数和三轮限制来自本地技能约定。
-
-The original snapshots are preserved under [sources/](sources/). The combined entry point resolves two ambiguities explicitly: deterministic execution requires known steps, inputs **and** failure branches; missing owner documents matter only when their branch is invoked. See [sources and adaptations](references/sources.md) for the research record. The linked Anthropic material consists of engineering articles and product guidance; this suite does not present every local rule as an official paper or policy.
-
-## 三种运行方式 / Three ways to run
-
-| Mode | 顺序 / Sequence | 何时用 / When it fits |
-|---|---|---|
-| `serial` | 判断 → 验证 → 风险 → 独立审查 → 问题处置 → 完成 / Judge → check → risk → review → adjudicate → close | 边界稳定、检查明确 / Stable scope and known checks |
-| `joint` | 同一顺序，审查前与完成前都增加判断检查点 / Same sequence, with judgment checkpoints before review and closure | 关键交接处需要重估工作是否仍合适 / Reconsider scope and sufficiency at critical gates |
-| `adaptive` | 保留同一组硬门，允许带理由回到指定节点 / Same gates, explicit backward routes | 发现新证据、修复、失败归因或局部复核 / New evidence, repairs and local re-review |
-
-`joint` 不会自动启动多个 agent；它规定判断和审查何时交换结论。独立审查可以由一个 worker 覆盖四个视角，也可由多个互不写入的 worker 分工。只有当分工收益大于交接、口径与合并成本时才并行。
-
-The coordinator does not launch agents, call a model API or manage their permissions. The host supplies independent workers. A same-context self-check should be reported honestly, not relabelled as independence.
-
-## 上手与安装 / Start and install
-
-运行器无需安装依赖。解压后，在当前包目录执行；把 `python` 替换为你环境里的真实 Python 3.10+ 解释器。运行目录放到目标项目和分发包之外，避免把私人输出打进压缩包。
-
-No dependency installation is needed for the runner. Work from the extracted package directory. Keep run state outside both the target project and the distributable tree.
+Clone the repository and run its checks with an installed Python 3.10+ interpreter. If your system's `python` command is a placeholder, use the command or path for your actual installation.
 
 ```powershell
 git clone https://github.com/Jxbbbbbyan/review-judgment-suite.git
@@ -88,62 +95,89 @@ python -m unittest discover -s tests -v
 python scripts/validate_package.py
 ```
 
-也可下载 Releases 中的技能 ZIP 与 SHA-256 校验文件。Release 说明记录其来源提交；ZIP 包含逐文件清单，不含原始运行目录。Use the release ZIP and checksum file for a packaged install; the release notes identify the source commit, and the archive includes a per-file manifest.
+也可以从 [v1.0.0 Release](https://github.com/Jxbbbbbyan/review-judgment-suite/releases/tag/v1.0.0) 获取技能 ZIP 与 SHA-256 校验文件。Release 记录了对应源码提交；ZIP 内有逐文件清单。安装时将整个 `review-judgment-suite` 目录放入宿主支持的技能位置，例如 Codex 的 `~/.codex/skills/`。请保留完整目录，而不是只复制 `SKILL.md`。
+
+Alternatively, download the skill ZIP and SHA-256 file from the [v1.0.0 release](https://github.com/Jxbbbbbyan/review-judgment-suite/releases/tag/v1.0.0). Its notes identify the source commit, and the archive includes a file manifest. Put the complete `review-judgment-suite` directory in your host's supported skill location—for example, `~/.codex/skills/` for Codex. Keep the supporting files with `SKILL.md`.
+
+向支持该技能的 agent 说明本次范围与验收要求，例如：
+
+Give your skill-enabled agent the scope and acceptance criteria, for example:
+
+> 使用 `$review-judgment-suite` 审查这次解析器改动。范围只包括解析器及其测试。先确认该运行哪些检查，再独立复核；列出 Important、Nit 和旧问题，修复后重新验证，不要扩展到发布。
+>
+> Use `$review-judgment-suite` to review this parser change and its tests. Establish the checks, obtain an independent review, distinguish Important findings, Nits and pre-existing issues, and re-verify repairs. Keep publication outside this task.
+
+要直接运行协调器，可以从包目录执行下面的流程。示例中的目标项目、文件和测试命令需要替换为你的实际任务；运行目录应放在目标项目和分发包之外。
+
+To run the coordinator directly, adapt the following commands to your real project, files and tests. Keep the run directory outside both the target project and the distributable package.
 
 ```powershell
-python scripts/review_flow.py --help
-python scripts/review_flow.py --run-dir ../review-run init --project ../target-project --task "Review this change" --scope app.py tests/test_app.py --mode adaptive
-python scripts/review_flow.py --run-dir ../review-run judge --decision proceed --execution agent --reason "The change is within the declared two-file scope"
+python scripts/review_flow.py --run-dir ../review-run init --project ../target-project --task "Review parser change" --scope parser.py tests/test_parser.py --mode adaptive
+python scripts/review_flow.py --run-dir ../review-run judge --decision proceed --execution agent --reason "Review is limited to the parser and its tests"
 python scripts/review_flow.py --run-dir ../review-run check --argv-json '["python", "-m", "unittest", "discover", "-s", "tests", "-v"]'
-python scripts/review_flow.py --run-dir ../review-run risk --level low --reason "Internal change with no sensitive paths"
+python scripts/review_flow.py --run-dir ../review-run risk --level low --reason "Internal parser change; no sensitive paths"
 ```
 
-随后由独立 reviewer 产出带当前 snapshot 的 JSON，再通过 `review --input` 导入。存在 Important 时先修复或给出经复核的不修理由。完整的首次流程、联合检查点、回退、失败归因、人工决定和结果格式见 [workflow.md](references/workflow.md)。
+随后让独立 reviewer 产出带当前 snapshot 的报告，通过 `review --input` 导入；处理发现，再尝试 `close`。上面的 Low 只是示例，实际等级应根据改动决定。报告格式、联合检查点、回退、失败归因和人工决定的完整命令见[使用手册](references/workflow.md)。
 
-For skill discovery, place this entire directory under the host's configured skill root and retain the folder name `review-judgment-suite`. For Codex, the conventional user location is `~/.codex/skills/review-judgment-suite`; for another host, use its supported skill directory. Copying files alone does not prove automatic invocation. The CLI works independently of discovery.
+Next, obtain a report from an independent reviewer for the current snapshot, import it with `review --input`, resolve findings and attempt `close`. Low risk above is an example, not a default assessment for your change. The [workflow reference](references/workflow.md) contains the report format and complete commands for checkpoints, re-entry, failures and human decisions.
 
-安装组合包时不需要覆盖原 `anthropic-review` 或 `judgment`。原技能继续保留；使用本组合时以本包的冲突处理契约为准。回滚只需移除组合包并保留运行证据，不涉及共享预设、认证或模型配置。
+## 审完之后你会拿到什么 / What you receive after review
 
-## 交付与可复查性 / Deliverables
+一份可回到原始证据的记录：本次范围与文件快照、实际检查命令与输出、风险判断、独立报告、问题处置及未覆盖部分。结论应明确写成“可以交付”“修复后复审”或“需要人工决定”，而不是只说“检查通过”。
 
-```text
-review-judgment-suite/
-├── SKILL.md                         combined skill entry
-├── README.md                        bilingual explanation and tests
-├── agents/openai.yaml               discovery metadata
-├── scripts/review_flow.py            local workflow coordinator
-├── scripts/build_release.py         clean ZIP and file manifest
-├── references/                      contracts, CLI and source mapping
-├── sources/                         unchanged local skill snapshots
-├── examples/                        redacted case and synthetic review task
-└── tests/                           executable gate regression tests
-```
+You receive a record that can be traced to its evidence: scope and snapshots, executed checks and output, risk decisions, independent reports, finding dispositions and coverage limits. The conclusion should say ready to deliver, fix and review again, or human decision needed—not merely that checks passed.
 
-运行证据保存在另选的 `run-dir`：`state.json` 与 `check-*.log`。报告应列明问题数量、风险、处置、真实检查结果、未覆盖事项和回滚方法。保留原始记录供授权人员核查；对外只分享经过检查的脱敏摘要。
+运行目录中的 `state.json` 与 `check-*.log` 可能包含路径、提示词或私人输出。保留原始证据供授权人员核查；对外分享脱敏摘要。关闭一次运行只表示在声明范围内完成了流程，不会替你提交代码、发布或部署。
 
-This package does not merge, deploy, publish or submit to Grok Bot. Human approval records remain attestations supplied from actual authorisation; neither an AI name nor a successful exit code grants permission. A timeout contains the direct subprocess only, so use host-level containment for commands that create long-lived child processes.
+The run's `state.json` and `check-*.log` may contain paths, prompts or private output. Keep raw evidence for authorised inspection and share redacted summaries. Closing a run records completion within scope; it does not commit, publish or deploy for you.
+
+## 方法依据与使用边界 / Method and limits
+
+| 参考资料 / Reference | 在流程中的作用 / Contribution |
+|---|---|
+| [Building effective agents](https://www.anthropic.com/research/building-effective-agents) | 明确确定工作流与自主判断的分工，设置程序化检查点 / Distinguish workflows from agent decisions and use programmatic checkpoints |
+| [How we built our multi-agent research system](https://www.anthropic.com/research/multi-agent-research-system) | 使用独立上下文、清晰的委派范围与材料交接 / Separate contexts, bounded delegation and artifact handoff |
+| [Effective context engineering for AI agents](https://www.anthropic.com/research/effective-context-engineering-for-ai-agents) | 关注上下文成本，并把后续需要的状态留在外部 / Account for context cost and retain useful state outside the conversation |
+
+以上是 Anthropic 的公开研究与工程文章。本项目据此整理方法并进行审查场景的再开发；三种模式、风险等级、审批人数、问题编号和收敛上限是本项目的具体约定，不代表文章逐项提出这些规则，也不表示官方背书。来源与改写记录见 [sources.md](references/sources.md)。
+
+These public research and engineering articles inform the approach. This project adapts and develops it for review work. Execution modes, risk levels, approval counts, finding IDs and convergence limits are project rules, not claims that the articles prescribe every detail or endorse this implementation. The [source record](references/sources.md) documents the mapping.
+
+协调器只追踪声明范围内的文件与适用规则，不是沙箱，也不会自动检查范围外的一切。超时处理只覆盖直接子进程；会启动长期子任务的命令，需要宿主提供相应隔离和观察。审查准确率、成本节省和跨模型效果尚无对照研究；现有测试验证的是过程门在给定输入下的行为。
+
+The coordinator tracks declared files and applicable rules rather than every file in a project. It is not a sandbox. Timeout handling covers the direct subprocess, so commands that create long-lived children need host-level containment and observation. There is no controlled study of review accuracy, cost savings or performance across models; the tests below establish gate behaviour for stated inputs.
 
 <a id="tests"></a>
 ## 测试与独立智能体案例 / Tests and independent-agent cases
 
-### 可执行回归 / Executable regression
+### 自动回归 / Automated regression
 
 ```powershell
 python -m unittest discover -s tests -v
+python scripts/validate_package.py
 ```
 
-覆盖三种模式、向前跳步拒绝、内容与约定变化后失效、陈旧报告、Important 跨轮保留、修复后的独立确认、人工证据数量与去重、失败归因、权限拒绝、超时、日志变更、路径越界、并发锁和预算耗尽。测试中模拟的 reviewer 与审批记录只用于验证门的行为，不冒充真实的独立审查或人工审批。
+已记录的 **23 项回归测试全部通过**，覆盖三种模式、跳步拒绝、证据失效、Important 保留、修复确认、审批记录、失败归因、超时、并发锁和预算限制。测试中的 reviewer 与审批对象是用于检验状态转换的模拟输入，不冒充独立推理或真实人工批准。
 
-The regression suite tests state-machine properties, including negative cases. Synthetic reviewer and approval objects are test fixtures. They do not demonstrate independent reasoning, authenticated human approval or a real-world defect-detection rate.
+The recorded **23-test regression suite passed**, covering the three modes, rejected skips, stale evidence, retained findings, fix confirmation, approval records, failure attribution, timeouts, locking and budgets. Reviewer and approval objects in these tests are synthetic inputs for state transitions, not evidence of independent reasoning or actual human approval.
 
-### 打包前已经做过的工作流 / Workflow used before this package
+### 已有的独立审查工作流 / An earlier independent review
 
-[脱敏案例全文](examples/prior-independent-review.md)保留了此前一个技术文档任务的过程：主 agent 读取材料并修改；独立 reviewer 在新上下文核对 diff 和证据；主 agent 整合意见、跑检查并确认交付。该轮记录包括 162 项文档引用检查、4 段命令语法检查和五份模型文件的一致性核对。
+一个技术文档任务采用了作者与独立 reviewer 分开的工作方式：作者读材料并修改，reviewer 在新上下文核对 diff 与证据，作者再整合意见、验证并确认交付。该轮记录有 162 项文档引用检查、4 段命令语法检查和五份模型文件的一致性核对。[脱敏案例](examples/prior-independent-review.md)保留了过程和覆盖边界。
 
-The [redacted case](examples/prior-independent-review.md) describes an observed author/reviewer workflow from before this coordinator existed. It preserves what was checked and what was not: documentation and source consistency were verified; GPU execution was not repeated. It is not retroactive proof that the new CLI orchestrated the old run.
+An earlier documentation task separated the author from an independent reviewer. The author prepared the change, the reviewer examined its diff and evidence in a fresh context, and the author integrated the findings and verified delivery. Recorded checks included 162 documentation references, four command snippets and five model artifacts. The [redacted case](examples/prior-independent-review.md) preserves the workflow and its limits.
 
-### 本次独立前向试用 / Independent forward trial
+这项工作发生在当前协调器完成之前，因此它展示的是后来被整理进流程的实践，不是新脚本运行的历史证明；当时没有重跑 GPU 推理。
 
-The fixture under [examples/forward-task/](examples/forward-task/) was used by a fresh reviewer exercising the packaged workflow. Actual outcomes and final command counts are recorded in [test-results.md](examples/test-results.md). Synthetic state-machine tests and live independent-agent observations are reported separately.
+That work predates the current coordinator. It illustrates the practice later formalised here; it is not retroactive evidence that the new script orchestrated the task. GPU inference was not rerun.
 
-独立试用已从原始任务和代码出发完成，没有提供作者预设答案。23 项流程回归全部通过；另一个保留缺陷的样本产生两项 Important，流程正确拒绝完成。结果只说明这些输入上的表现；完整输出、修复与未覆盖部分见测试记录。
+### 新上下文前向试用 / Fresh-context forward trial
+
+独立 reviewer 只收到技能、[任务要求](examples/forward-task/REQUIREMENTS.md)和[样本代码](examples/forward-task/ratio.py)，没有读取作者的回归测试或预设答案。它复现了全零输入除零、负数输入未校验两类问题：7 项契约检查中，4 项通过、2 项失败、1 项错误。失败记录保留后，流程拒绝完成。
+
+A fresh reviewer received the skill, [requirements](examples/forward-task/REQUIREMENTS.md) and [fixture](examples/forward-task/ratio.py), without the author's regression tests or expected answer. It reproduced division by zero for all-zero input and missing validation for negative input: four of seven contract checks passed, two failed and one errored. The failed evidence remained recorded and completion was refused.
+
+另一个明确限定为“只检查语法”的运行导入这两项 Important 后，`close` 同样被拒绝。样本有意保留缺陷，用于观察门是否生效，不是交付给生产使用的计算函数。完整命令、输出、审查发现与修复记录见[测试结果](examples/test-results.md)。
+
+A separate run explicitly limited to syntax checking also refused `close` after importing those two Important findings. The fixture intentionally retains its defects to exercise the gates; it is not a production calculation utility. See the [test results](examples/test-results.md) for commands, outcomes, review findings and coordinator repairs.
