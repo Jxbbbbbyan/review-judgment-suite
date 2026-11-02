@@ -1,6 +1,6 @@
 ---
 name: review-judgment-suite
-description: Combine action-boundary judgment with layered change review using a local evidence state machine. Use for an explicitly requested combined review, multi-step risky changes, failure attribution, or review handoff that needs resumable evidence; not routine single-step edits.
+description: Combine judgment and layered review with snapshot-bound evidence, bounded re-entry and optional cross-model handoff. Use for requested combined reviews or resumable reviewer handoffs; not routine single-step edits.
 ---
 
 # Review + Judgment / 判断与分层审查
@@ -18,13 +18,14 @@ Use Judgment to decide whether to act, how far, when to replan and when to stop.
 5. Supply a fresh reviewer with only intent, diff/current files, relevant conventions and scope. Do not pass the author's preferred conclusion. Cover correctness, security, end-to-end behaviour and conventions. Independent context must be provided by the host; different names in JSON do not create it. If delegation is unavailable, disclose the limitation and do not call a same-context self-check independent.
 6. Recheck candidates against source evidence before submitting a finding: exact file/line, why it is real, introduced-vs-pre-existing, impact and same-class coverage. Label Important / Nit / Pre-existing; omit style-only complaints. Important requires a verified fix on a new snapshot or a documented evidence-based rejection. Nit may be deferred; pre-existing issues are listed, not silently repaired beyond scope.
 7. On content or owner changes the runner invalidates checks and review, but carries Important obligations forward. At most three review/content rounds; reopening an existing pass also counts, then redesign/handoff. Same-content routes consume a separate routing budget. Third-round review focuses on the new delta **and** carried issues, never silently drops old issues.
-8. `close` only records completion within declared scope. It does not publish, merge, submit to a bot or grant approval. No Grok call is bundled. A stop/handoff run stays terminal; new authority or changed conditions require a new run with links to the earlier evidence.
+8. `close` only records completion within declared scope. It does not publish, merge, submit to a bot or grant approval. Cross-model routing is a separate opt-in layer, never automatically invoked by the core. A stop/handoff run stays terminal; new authority or changed conditions require a new run with links to the earlier evidence.
 
 ## Reference routing
 
 - [Composition rules and gates](references/composition.md): loading, mode selection, failures, owner resolution, evidence limits.
 - [CLI, state and JSON contracts](references/workflow.md): actual execution and stage jumps.
 - [Sources and adaptation record](references/sources.md): official readings versus local conventions; snapshot provenance.
+- [Optional cross-model review](references/cross-model-review.md): load only for separate developer/reviewer models or DSH/Codex/Grok Bot routing. Use explicitly selected material; do not forward private sessions or run a paid review merely to test transport.
 - [Original local skills](sources/): inspection-only snapshots. They are not runtime dependencies; use this combined contract where adaptation differs.
 
 ## Output

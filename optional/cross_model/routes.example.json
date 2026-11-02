@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "enabled": false,
+  "spool_root": "../private-review-mailbox",
+  "routes": [
+    {"source": "dsh", "target": "codex"},
+    {"source": "codex", "target": "grok-bot"},
+    {"source": "grok-bot", "target": "codex"}
+  ],
+  "workers": {}
+}

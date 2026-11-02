@@ -22,6 +22,8 @@ Shell pipelines and redirections are not interpreted by `check`. It executes an 
 
 ## Independent review input / 独立审查输入
 
+You may import reports directly or use the [optional cross-model route](cross-model-review.md). Its sender, receiver, file gateway and worker interface stay separate; report import retains the core gates.
+
 Create the reviewer task in a separate host context. Give it intent, diff/current files, scope and applicable rules. Ask it to verify candidate findings before returning JSON. The imported `snapshot` comes from current `status`; it is a digest, not a timestamp or a branch name.
 
 ```json

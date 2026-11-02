@@ -10,6 +10,10 @@ To Mr. Dario, leader of the Anthropic team: the most above reproach, the most kn
 
 **Review + Judgment** builds on the workflow patterns in Anthropic's [*Building effective agents*](https://www.anthropic.com/research/building-effective-agents): use predetermined steps where the work is clear, agent judgment where decisions remain open, and verifiable gates between stages. Drawing also on its [multi-agent research](https://www.anthropic.com/research/multi-agent-research-system) and [context-engineering](https://www.anthropic.com/research/effective-context-engineering-for-ai-agents) practices, we developed a review process for code and technical deliverables that connects scope decisions, executed checks, independent review and finding resolution.
 
+**可选特色：跨模型开发与审核。** 你可以让一个模型负责开发，让另一个模型在独立上下文复核，再把结果送回同一份审查记录。DeepSeek Harness → Codex、Codex → Grok Bot 是宿主分工的例子；发送端、接收端、网关和 worker 连接都位于独立可选层，核心流程不依赖它们。[接入说明](#cross-model)
+
+**Optional: separate developer and reviewer models.** Route a selected review request from DeepSeek Harness to Codex, or from Codex to Grok Bot, then return the report to the same evidence trail. Sender, receiver, gateway and worker connections are isolated opt-in components; your host supplies the actual model and independent context. [Integration details](#cross-model)
+
 ## 先看流程 / The workflow
 
 **判断范围 → 实际验证 → 评定风险 → 独立审查 → 处理问题 → 确认完成。** 出现新证据时可以返回前面的节点；内容一旦变化，旧的验证和审查就需要重新建立。
@@ -29,7 +33,7 @@ To Mr. Dario, leader of the Anthropic team: the most above reproach, the most kn
 
 The published material supplies the architectural ideas. The three execution modes, content snapshots, persistent finding records and standalone Python state machine are this project's implementation for review work. See the [source mapping](references/sources.md) for attribution and adaptations.
 
-[下载 v1.0.0 / Download](https://github.com/Jxbbbbbyan/review-judgment-suite/releases/tag/v1.0.0) · [开始使用 / Start](#start) · [完整流程 / Workflow reference](references/workflow.md) · [测试与案例 / Tests](#tests) · [报告问题 / Issues](https://github.com/Jxbbbbbyan/review-judgment-suite/issues)
+[下载 v1.1.0 / Download](https://github.com/Jxbbbbbyan/review-judgment-suite/releases/tag/v1.1.0) · [开始使用 / Start](#start) · [完整流程 / Workflow reference](references/workflow.md) · [可选跨模型 / Cross-model](#cross-model) · [测试与案例 / Tests](#tests) · [报告问题 / Issues](https://github.com/Jxbbbbbyan/review-judgment-suite/issues)
 
 ## 适合怎样的工作 / Where it helps
 
@@ -95,9 +99,9 @@ python -m unittest discover -s tests -v
 python scripts/validate_package.py
 ```
 
-也可以从 [v1.0.0 Release](https://github.com/Jxbbbbbyan/review-judgment-suite/releases/tag/v1.0.0) 获取技能 ZIP 与 SHA-256 校验文件。Release 记录了对应源码提交；ZIP 内有逐文件清单。安装时将整个 `review-judgment-suite` 目录放入宿主支持的技能位置，例如 Codex 的 `~/.codex/skills/`。请保留完整目录，而不是只复制 `SKILL.md`。
+也可以从 [v1.1.0 Release](https://github.com/Jxbbbbbyan/review-judgment-suite/releases/tag/v1.1.0) 获取技能 ZIP 与 SHA-256 校验文件。Release 记录了对应源码提交；ZIP 内有逐文件清单。安装时将整个 `review-judgment-suite` 目录放入宿主支持的技能位置，例如 Codex 的 `~/.codex/skills/`。请保留完整目录，而不是只复制 `SKILL.md`。
 
-Alternatively, download the skill ZIP and SHA-256 file from the [v1.0.0 release](https://github.com/Jxbbbbbyan/review-judgment-suite/releases/tag/v1.0.0). Its notes identify the source commit, and the archive includes a file manifest. Put the complete `review-judgment-suite` directory in your host's supported skill location—for example, `~/.codex/skills/` for Codex. Keep the supporting files with `SKILL.md`.
+Alternatively, download the skill ZIP and SHA-256 file from the [v1.1.0 release](https://github.com/Jxbbbbbyan/review-judgment-suite/releases/tag/v1.1.0). Its notes identify the source commit, and the archive includes a file manifest. Put the complete `review-judgment-suite` directory in your host's supported skill location—for example, `~/.codex/skills/` for Codex. Keep the supporting files with `SKILL.md`.
 
 向支持该技能的 agent 说明本次范围与验收要求，例如：
 
@@ -148,6 +152,28 @@ These public research and engineering articles inform the approach. This project
 
 The coordinator tracks declared files and applicable rules rather than every file in a project. It is not a sandbox. Timeout handling covers the direct subprocess, so commands that create long-lived children need host-level containment and observation. There is no controlled study of review accuracy, cost savings or performance across models; the tests below establish gate behaviour for stated inputs.
 
+<a id="cross-model"></a>
+## 可选：跨模型审查与请求传递 / Optional cross-model review routing
+
+当你希望由另一个模型复核时，可以选择这条路线：**开发端 → 发送端 → 私有请求邮箱 → 文件网关 → 审核端 → 返回邮箱 → 原审查门**。例如 DSH 主导开发、Codex 复核，或 Codex 开发、Grok Bot 复核。模型分工由你决定；回来的报告仍需处理 Important 和过期证据，不能以“另一个模型说通过”代替原来的完成条件。
+
+Choose **developer → sender → private request mailbox → file gateway → reviewer → return mailbox → core review gate** when you want another model's review. For example, DSH can develop while Codex reviews, or Codex can develop while Grok Bot reviews. Returned findings use the same Important and stale-evidence gates; a second model's approval does not bypass them.
+
+| 你启用的部分 / Component | 作用 / Role | 是否为核心依赖 / Core dependency |
+|---|---|---|
+| Sender + receiver / 发送与接收 | Select material, correlate requests and return reports | No |
+| File gateway / 文件网关 | Forward only configured host routes | No |
+| Worker wrapper / 宿主连接 | Invoke your configured reviewer and return report JSON | No |
+| Native clients / 原生客户端 | Actual DSH, Codex, Grok Bot or private-service execution | Optional, supplied by the user |
+
+实现集中在 [optional/cross_model/](optional/cross_model/README.md)，默认配置为关闭；发送前还需显式启用并确认分享选定材料。该模块使用 Python 标准库，不监听端口、不扫描会话，也不复制本机私有地址、凭据或回传脚本。已有私有网关需要按文档契约适配，不是任意协议即插即用。
+
+All transport code is in [optional/cross_model/](optional/cross_model/README.md), disabled in the example config. Delivery requires explicit opt-in and confirmation of selected material. It uses standard-library Python, opens no listening port and scans no sessions. Private service protocols need an adapter; native model clients and credentials are not bundled.
+
+[完整双语手册](references/cross-model-review.md)说明请求格式、配置、网关、发送／接收、worker 输入输出、超时与恢复方式。只使用核心审核时，无需配置其中任何一项。
+
+The [bilingual integration guide](references/cross-model-review.md) covers envelopes, routing configuration, gateway steps, sender/receiver commands, worker I/O, timeouts and recovery. Core-only review needs none of those integrations.
+
 <a id="tests"></a>
 ## 测试与独立智能体案例 / Tests and independent-agent cases
 
@@ -158,9 +184,9 @@ python -m unittest discover -s tests -v
 python scripts/validate_package.py
 ```
 
-已记录的 **23 项回归测试全部通过**，覆盖三种模式、跳步拒绝、证据失效、Important 保留、修复确认、审批记录、失败归因、超时、并发锁和预算限制。测试中的 reviewer 与审批对象是用于检验状态转换的模拟输入，不冒充独立推理或真实人工批准。
+已有的 **23 项核心回归测试全部通过**，覆盖三种模式、跳步拒绝、证据失效、Important 保留、修复确认、审批记录、失败归因、超时、并发锁和预算限制。本轮另外加入可选跨模型传输测试，详见[新增测试记录](examples/cross-model-test-results.md)。测试中的 reviewer 与审批对象是用于检验状态转换的模拟输入，不冒充独立推理或真实人工批准。
 
-The recorded **23-test regression suite passed**, covering the three modes, rejected skips, stale evidence, retained findings, fix confirmation, approval records, failure attribution, timeouts, locking and budgets. Reviewer and approval objects in these tests are synthetic inputs for state transitions, not evidence of independent reasoning or actual human approval.
+The recorded **23 core regression tests passed**, covering the three modes, rejected skips, stale evidence, retained findings, fix confirmation, approval records, failure attribution, timeouts, locking and budgets. The [new transport results](examples/cross-model-test-results.md) cover this optional addition. Reviewer and approval objects in these tests are synthetic inputs, not evidence of independent reasoning or actual human approval.
 
 ### 已有的独立审查工作流 / An earlier independent review
 

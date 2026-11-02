@@ -10,3 +10,8 @@ check-*.log
 approval.json
 *.zip
 *.log
+routes.local.json
+review-mailbox/
+private-review-mailbox/
+*.request.json
+*.response.json

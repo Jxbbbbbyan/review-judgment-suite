@@ -11,6 +11,8 @@
 
 The script checks **process evidence**, not truth. It cannot tell whether a check is sufficient, a reviewer was really isolated, a finding was honestly tagged, a risk label was accurate, or a human identity was genuine. It also cannot prevent somebody editing its state file or running unrelated commands outside it. Those remain agent/host/reviewer responsibilities.
 
+The [optional cross-model layer](cross-model-review.md) can carry reports from another host/model to these same gates. It is not imported by the core and does not supply a model backend or reviewer independence.
+
 脚本固定可验证的过程条件，不替代工程判断。有人执行 `print('ok')` 并不能因此证明代码正确；JSON 写了 independent 也不等于真正独立。运行目录由调用者控制，不是防篡改审计系统。
 
 ## Modes / 三种运行方式

@@ -8,14 +8,21 @@ import re
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-DIRECTORIES = {"scripts", "references", "sources", "examples", "tests", "agents"}
+DIRECTORIES = {"scripts", "references", "sources", "examples", "tests", "agents", "optional"}
 EXTENSIONS = {".py", ".md", ".json", ".yaml"}
+OPTIONAL_ASSETS = {
+    "optional/cross_model/README.md", "optional/cross_model/review_bus.py",
+    "optional/cross_model/demo_worker.py", "optional/cross_model/routes.example.json",
+}
 
 def files():
     for p in sorted(ROOT.rglob("*")):
         if not p.is_file():
             continue
         name = p.relative_to(ROOT)
+        # A private spool/config may be gitignored under optional/. Never recurse it into a release.
+        if name.parts[0] == "optional" and name.as_posix() not in OPTIONAL_ASSETS:
+            continue
         if name.parts[0] not in DIRECTORIES and name.as_posix() not in {"SKILL.md", "README.md"}:
             continue
         if p.suffix not in EXTENSIONS or "__pycache__" in name.parts:
